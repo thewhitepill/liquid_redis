@@ -47,9 +47,7 @@ def _get_model_generic_args(model_type: type[BaseModel]) -> tuple[type, ...]:
 
 
 def _get_reducer_types(reducer: Reducer[S, A]) -> tuple[Type[S], Type[A]]:
-    types = [
-        p.annotation for p in signature(reducer).parameters.values()
-    ]
+    types = [p.annotation for p in signature(reducer).parameters.values()]
 
     if len(types) != 2:
         raise TypeError("Reducer must have exactly two parameters")
