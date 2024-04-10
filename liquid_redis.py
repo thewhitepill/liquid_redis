@@ -302,7 +302,7 @@ class RedisStore(Store[S, A, S]):
             self._redis_namespace = None
             self._redis_pubsub_handler_task = None
 
-    async def dispatch(self, action: A) -> S:
+    async def dispatch(self, action: A) -> S: # type: ignore[override]
         if not self._state:
             raise InvalidStateError
 
@@ -360,11 +360,12 @@ class RedisStore(Store[S, A, S]):
 
             return self._state
 
-    def get_state(self) -> S:
+    async def get_state(self) -> S:
         if self._state is None:
             raise InvalidStateError
 
-        return self._state
+        async with self._lock:
+            return self._state
 
 
 def redis_store_factory(
