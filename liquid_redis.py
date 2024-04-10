@@ -26,7 +26,7 @@ __all__ = (
     "InvalidStateError",
     "RedisStore",
 
-    "create_redis_store"
+    "redis_store_factory"
 )
 
 
@@ -368,7 +368,7 @@ class RedisStore(Store[S, A, S]):
             return self._state
 
 
-def create_redis_store(
+def redis_store_factory(
     reducer: Reducer[S, A],
     initial_state: S
 ) -> RedisStore[S, A]:
