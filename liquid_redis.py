@@ -8,6 +8,7 @@ from asyncio import Lock, Task
 from inspect import signature
 from typing import (
     Generic,
+    Hashable,
     Optional,
     Type,
     TypeAlias,
@@ -16,7 +17,7 @@ from typing import (
 )
 
 from liquid import Reducer, Store
-from pydantic import BaseModel, field_validator, field_serializer
+from pydantic import BaseModel, TypeAdapter, field_validator, field_serializer
 from redis.asyncio import Redis, WatchError
 from redis.asyncio.client import PubSub
 
@@ -30,8 +31,8 @@ __all__ = (
 )
 
 
-A = TypeVar("A", bound=BaseModel)
-S = TypeVar("S", bound=BaseModel)
+A = TypeVar("A")
+S = TypeVar("S", bound=Hashable)
 
 
 class InvalidStateError(Exception):
@@ -75,7 +76,9 @@ class _StateContainer(BaseModel, Generic[S]):
     @field_serializer("state")
     @classmethod
     def serialize_state(cls, value: S) -> str:
-        return value.model_dump_json()
+        state_type: type[S] = _get_model_generic_args(cls)[0]
+
+        return TypeAdapter(state_type).serialize_json(value)
 
     @field_serializer("state_hash")
     @classmethod
@@ -85,14 +88,14 @@ class _StateContainer(BaseModel, Generic[S]):
     @field_validator("state", mode="before")
     @classmethod
     def validate_state(cls, value: Union[S, bytes]) -> S:
-        model: type[S] = _get_model_generic_args(cls)[0]
+        state_type: type[S] = _get_model_generic_args(cls)[0]
 
-        if isinstance(value, model):
+        if isinstance(value, state_type):
             return value
 
         assert isinstance(value, bytes)
 
-        return model.model_validate_json(value)
+        return TypeAdapter(state_type).validate_json(value)
 
     @field_validator("state_hash", mode="before")
     @classmethod
