@@ -13,7 +13,9 @@ from typing import (
     Type,
     TypeAlias,
     TypeVar,
-    Union
+    Union,
+
+    get_type_hints
 )
 
 from liquid import Reducer, Store
@@ -48,13 +50,15 @@ def _get_model_generic_args(model_type: type[BaseModel]) -> tuple[type, ...]:
 
 
 def _get_reducer_types(reducer: Reducer[S, A]) -> tuple[Type[S], Type[A]]:
-    types = [p.annotation for p in signature(reducer).parameters.values()]
+    parameters = [p.annotation for p in signature(reducer).parameters.values()]
 
-    if len(types) != 2:
+    if len(parameters) != 2:
         raise TypeError("Reducer must have exactly two parameters")
 
-    if inspect._empty in types:
+    if inspect._empty in parameters:
         raise TypeError("Reducer parameters must have type annotations")
+
+    types = [v for k, v in get_type_hints(reducer).items() if k != "return"]
 
     return tuple(types)
 
@@ -248,8 +252,6 @@ class RedisStore(Store[S, A, S]):
             raise InvalidStateError
 
         state_type = self._state_type
-
-        _StateContainer[state_type].model_rebuild()
 
         async with self._lock:
             self._redis_client = redis_client
