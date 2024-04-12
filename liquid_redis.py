@@ -249,6 +249,8 @@ class RedisStore(Store[S, A, S]):
 
         state_type = self._state_type
 
+        _StateContainer[state_type].model_rebuild()
+
         async with self._lock:
             self._redis_client = redis_client
             self._redis_namespace = redis_namespace
