@@ -82,7 +82,7 @@ class _StateContainer(BaseModel, Generic[S]):
     def serialize_state(cls, value: S) -> str:
         state_type: type[S] = _get_model_generic_args(cls)[0]
 
-        return TypeAdapter(state_type).serialize_json(value)
+        return TypeAdapter(state_type).dump_json(value)
 
     @field_serializer("state_hash")
     @classmethod
@@ -267,18 +267,6 @@ class RedisStore(Store[S, A, S]):
             if state_container is None:
                 self._state = self._initial_state
                 self._state_hash = hash(self._state)
-
-                state_container = _StateContainer[state_type]( # type: ignore[valid-type]
-                    state=self._state,
-                    state_hash=self._state_hash
-                )
-
-                await _set_state_container(
-                    state_container,
-                    None,
-                    self._redis_client,
-                    self._redis_namespace
-                )
             else:
                 self._state = state_container.state
                 self._state_hash = state_container.state_hash
