@@ -144,14 +144,16 @@ async def _set_state_container(
         await pipe.watch(_StateContainer.state_hash_key(namespace))
 
         if current_local_state_hash:
-            current_remote_state_hash = _StateContainer.validate_state_hash( # type: ignore[call-arg]
-                await pipe.get(
-                    _StateContainer.state_hash_key(namespace)
-                )
+            current_remote_state_hash = await pipe.get(
+                _StateContainer.state_hash_key(namespace)
             )
 
-            if current_remote_state_hash != current_local_state_hash:
-                raise ConcurrencyError
+            if current_remote_state_hash:
+                current_remote_state_hash = _StateContainer \
+                    .validate_state_hash(current_remote_state_hash)
+
+                if current_remote_state_hash != current_local_state_hash:
+                    raise ConcurrencyError
 
         pipe.multi()
 
